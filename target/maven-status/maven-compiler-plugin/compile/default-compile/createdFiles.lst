@@ -1,0 +1,4 @@
+org\expleo\TicketBookingJavaProject\exception\CustomException$PaymentFailedException.class
+org\expleo\TicketBookingJavaProject\exception\CustomException$InvalidUserException.class
+org\expleo\TicketBookingJavaProject\exception\CustomException$BookingNotFoundException.class
+org\expleo\TicketBookingJavaProject\exception\CustomException$SeatNotAvailableException.class
