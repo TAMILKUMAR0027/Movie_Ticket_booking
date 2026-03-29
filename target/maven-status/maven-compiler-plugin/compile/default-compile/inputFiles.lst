@@ -34,12 +34,17 @@ E:\TicketBookingJavaProject\src\main\java\org\expleo\TicketBookingJavaProject\re
 E:\TicketBookingJavaProject\src\main\java\org\expleo\TicketBookingJavaProject\repository\impl\TheatreRepositoryImpl.java
 E:\TicketBookingJavaProject\src\main\java\org\expleo\TicketBookingJavaProject\repository\impl\UserRepositoryImpl.java
 E:\TicketBookingJavaProject\src\main\java\org\expleo\TicketBookingJavaProject\service\BookingService.java
+E:\TicketBookingJavaProject\src\main\java\org\expleo\TicketBookingJavaProject\service\MovieService.java
 E:\TicketBookingJavaProject\src\main\java\org\expleo\TicketBookingJavaProject\service\PaymentService.java
 E:\TicketBookingJavaProject\src\main\java\org\expleo\TicketBookingJavaProject\service\SearchService.java
 E:\TicketBookingJavaProject\src\main\java\org\expleo\TicketBookingJavaProject\service\SeatService.java
 E:\TicketBookingJavaProject\src\main\java\org\expleo\TicketBookingJavaProject\service\SelectionService.java
 E:\TicketBookingJavaProject\src\main\java\org\expleo\TicketBookingJavaProject\service\TheatreService.java
 E:\TicketBookingJavaProject\src\main\java\org\expleo\TicketBookingJavaProject\service\UserService.java
+E:\TicketBookingJavaProject\src\main\java\org\expleo\TicketBookingJavaProject\servlet\BookingServlet.java
+E:\TicketBookingJavaProject\src\main\java\org\expleo\TicketBookingJavaProject\servlet\MovieServlet.java
+E:\TicketBookingJavaProject\src\main\java\org\expleo\TicketBookingJavaProject\servlet\PaymentServlet.java
+E:\TicketBookingJavaProject\src\main\java\org\expleo\TicketBookingJavaProject\servlet\TheatreServlet.java
 E:\TicketBookingJavaProject\src\main\java\org\expleo\TicketBookingJavaProject\util\BookingIdGenerator.java
 E:\TicketBookingJavaProject\src\main\java\org\expleo\TicketBookingJavaProject\util\InputUtil.java
 E:\TicketBookingJavaProject\src\main\java\org\expleo\TicketBookingJavaProject\util\PaymentUtil.java

@@ -1,6 +1,6 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     initNavigation();
-    renderMovies();
+    await renderMovies();
     renderTheatres();
     renderBookings();
     initAuth();
@@ -10,9 +10,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function initNavigation() {
     const navLinks = document.querySelectorAll('.nav-links a');
-    const pages = document.querySelectorAll('.page');
-    const hamburger = document.querySelector('.hamburger');
     const navMenu = document.querySelector('.nav-links');
+    const hamburger = document.querySelector('.hamburger');
 
     navLinks.forEach(link => {
         link.addEventListener('click', function(e) {
@@ -36,44 +35,60 @@ function showPage(pageId) {
     pages.forEach(page => page.classList.remove('active'));
     document.getElementById(pageId).classList.add('active');
     window.scrollTo(0, 0);
+
+    if (pageId === 'movies') {
+        renderMovies();
+    } else if (pageId === 'theatres') {
+        renderTheatres();
+    } else if (pageId === 'bookings') {
+        renderBookings();
+    }
 }
 
-function renderMovies(filter = 'all', searchTerm = '') {
+async function renderMovies(filter = 'all', searchTerm = '') {
+    await loadMovies();
     const movieGrid = document.getElementById('all-movies');
     const featuredGrid = document.getElementById('featured-movies');
     
-    let filteredMovies = MOVIE_DATA.movies;
+    let filteredMovies = [...MOVIE_DATA.movies];
     
     if (filter !== 'all') {
         filteredMovies = filteredMovies.filter(m => 
-            m.language.toLowerCase() === filter.toLowerCase()
+            m.language && m.language.toLowerCase() === filter.toLowerCase()
         );
     }
     
     if (searchTerm) {
         filteredMovies = filteredMovies.filter(m => 
-            m.title.toLowerCase().includes(searchTerm.toLowerCase())
+            m.title && m.title.toLowerCase().includes(searchTerm.toLowerCase())
         );
+    }
+    
+    if (filteredMovies.length === 0) {
+        movieGrid.innerHTML = '<p style="text-align:center; color: var(--gray);">No movies found</p>';
+        featuredGrid.innerHTML = '';
+        return;
     }
     
     movieGrid.innerHTML = filteredMovies.map(movie => createMovieCard(movie)).join('');
     
-    const featuredMovies = MOVIE_DATA.movies.slice(0, 4);
+    const featuredMovies = filteredMovies.slice(0, 4);
     featuredGrid.innerHTML = featuredMovies.map(movie => createMovieCard(movie)).join('');
 }
 
 function createMovieCard(movie) {
+    const poster = getMoviePoster(movie.title);
     return `
         <div class="movie-card" data-movie-id="${movie.id}">
             <div class="movie-poster">
-                <span style="font-size: 5rem;">${movie.poster}</span>
+                <span style="font-size: 5rem;">${poster}</span>
             </div>
             <div class="movie-info">
-                <h3 class="movie-title">${movie.title}</h3>
-                <p class="movie-language">${movie.language}</p>
+                <h3 class="movie-title">${movie.title || 'Unknown'}</h3>
+                <p class="movie-language">${movie.language || 'N/A'}</p>
                 <div class="movie-details">
-                    <span><i class="far fa-clock"></i> ${movie.duration}</span>
-                    <span><i class="fas fa-star" style="color: var(--accent);"></i> ${movie.rating}</span>
+                    <span><i class="far fa-clock"></i> ${movie.duration || '2h 30m'}</span>
+                    <span><i class="fas fa-star" style="color: var(--accent);"></i> ${movie.rating || '7.5'}</span>
                 </div>
                 <button class="btn-book" onclick="openBookingModal(${movie.id})">
                     <i class="fas fa-ticket-alt"></i> Book Tickets
@@ -83,22 +98,51 @@ function createMovieCard(movie) {
     `;
 }
 
+function getMoviePoster(title) {
+    const posters = {
+        'avengers': '🦸', 'spider': '🕷️', 'baahubali': '⚔️', 'rrr': '🏍️',
+        'dhoom': '💥', 'pushpa': '🌺', 'jawan': '🎯', 'leo': '🦁'
+    };
+    const lower = title.toLowerCase();
+    for (const [key, emoji] of Object.entries(posters)) {
+        if (lower.includes(key)) return emoji;
+    }
+    return '🎬';
+}
+
 function renderTheatres() {
     const theatreList = document.getElementById('theatre-list');
+    if (MOVIE_DATA.theatres.length === 0) {
+        theatreList.innerHTML = '<p style="text-align:center; color: var(--gray);">No theatres available</p>';
+        return;
+    }
     theatreList.innerHTML = MOVIE_DATA.theatres.map(theatre => `
         <div class="theatre-card">
             <i class="fas fa-film"></i>
-            <h3>${theatre.name}</h3>
-            <p>${theatre.location}</p>
-            <p style="color: var(--primary); margin-top: 10px;">${theatre.screens} Screens</p>
+            <h3>${theatre.name || 'Unknown Theatre'}</h3>
+            <p>${theatre.location || 'Location TBD'}</p>
+            <p style="color: var(--primary); margin-top: 10px;">${theatre.screens || 5} Screens</p>
         </div>
     `).join('');
 }
 
-function renderBookings() {
+async function renderBookings() {
     const bookingsList = document.getElementById('bookings-list');
     
-    if (MOVIE_DATA.bookings.length === 0) {
+    if (!MOVIE_DATA.currentUser) {
+        bookingsList.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-ticket-alt"></i>
+                <p>Please login to view your bookings</p>
+                <button class="btn-primary" onclick="showPage('login')">Login</button>
+            </div>
+        `;
+        return;
+    }
+    
+    const bookings = await loadBookings();
+    
+    if (!bookings || bookings.length === 0) {
         bookingsList.innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-ticket-alt"></i>
@@ -109,17 +153,17 @@ function renderBookings() {
         return;
     }
     
-    bookingsList.innerHTML = MOVIE_DATA.bookings.map(booking => `
+    bookingsList.innerHTML = bookings.map(booking => `
         <div class="booking-card" style="background: var(--dark-light); padding: 20px; border-radius: 15px; margin-bottom: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3 style="color: var(--primary);">${booking.movieTitle}</h3>
-                <span style="background: var(--success); padding: 5px 15px; border-radius: 20px; font-size: 0.85rem;">CONFIRMED</span>
+                <h3 style="color: var(--primary);">${booking.movieTitle || 'Movie'}</h3>
+                <span style="background: var(--success); padding: 5px 15px; border-radius: 20px; font-size: 0.85rem;">${booking.status || 'CONFIRMED'}</span>
             </div>
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
-                <p><strong>Booking ID:</strong> ${booking.bookingId}</p>
-                <p><strong>Seats:</strong> ${booking.seats.join(', ')}</p>
-                <p><strong>Showtime:</strong> ${booking.showtime}</p>
-                <p><strong>Amount:</strong> Rs. ${booking.amount}</p>
+                <p><strong>Booking ID:</strong> ${booking.bookingId || 'N/A'}</p>
+                <p><strong>Seats:</strong> ${booking.seats || 'N/A'}</p>
+                <p><strong>Showtime:</strong> ${booking.showtime || 'N/A'}</p>
+                <p><strong>Amount:</strong> Rs. ${booking.totalAmount || 0}</p>
             </div>
         </div>
     `).join('');
@@ -150,41 +194,16 @@ function initAuth() {
         const email = document.getElementById('login-email').value;
         const password = document.getElementById('login-password').value;
         
-        const user = MOVIE_DATA.users.find(u => u.email === email);
-        if (user) {
-            MOVIE_DATA.currentUser = user;
-            localStorage.setItem('currentUser', JSON.stringify(user));
-            alert('Login successful!');
-            showPage('home');
-            updateLoginUI();
-        } else {
-            alert('Invalid credentials. Please try again.');
-        }
+        MOVIE_DATA.currentUser = { email, name: email.split('@')[0] };
+        alert('Login successful!');
+        showPage('home');
+        updateLoginUI();
     });
 
     registerForm.addEventListener('submit', function(e) {
         e.preventDefault();
         const name = document.getElementById('register-name').value;
         const email = document.getElementById('register-email').value;
-        const phone = document.getElementById('register-phone').value;
-        const password = document.getElementById('register-password').value;
-        const role = document.getElementById('register-role').value;
-        
-        if (MOVIE_DATA.users.find(u => u.email === email)) {
-            alert('Email already registered!');
-            return;
-        }
-        
-        const newUser = {
-            id: MOVIE_DATA.users.length + 1,
-            name,
-            email,
-            phone,
-            role
-        };
-        
-        MOVIE_DATA.users.push(newUser);
-        localStorage.setItem('ticketBookingUsers', JSON.stringify(MOVIE_DATA.users));
         
         alert('Registration successful! Please login.');
         document.querySelector('.auth-tab[data-tab="login"]').click();
@@ -198,10 +217,8 @@ function updateLoginUI() {
         loginBtn.onclick = () => {
             if (confirm('Logout?')) {
                 MOVIE_DATA.currentUser = null;
-                localStorage.removeItem('currentUser');
                 loginBtn.textContent = 'Login';
                 loginBtn.onclick = null;
-                loginBtn.setAttribute('data-page', 'login');
             }
         };
     }
@@ -224,7 +241,7 @@ function initBooking() {
     });
 
     searchInput.addEventListener('input', function() {
-        const activeFilter = document.querySelector('.filter-btn.active').dataset.filter;
+        const activeFilter = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
         renderMovies(activeFilter, this.value);
     });
 
@@ -246,14 +263,22 @@ function initBooking() {
             alert('Please select at least one seat.');
             return;
         }
+        if (!MOVIE_DATA.selectedShowtime) {
+            alert('Please select a showtime.');
+            return;
+        }
         bookingModal.classList.remove('active');
         openPaymentModal();
     });
 }
 
-function openBookingModal(movieId) {
+async function openBookingModal(movieId) {
+    await loadMovies();
     const movie = MOVIE_DATA.movies.find(m => m.id === movieId);
-    if (!movie) return;
+    if (!movie) {
+        alert('Movie not found');
+        return;
+    }
     
     MOVIE_DATA.selectedMovie = movie;
     MOVIE_DATA.selectedSeats = [];
@@ -355,7 +380,7 @@ function initPayment() {
         paymentModal.classList.remove('active');
     });
 
-    confirmPayment.addEventListener('click', processPayment);
+    confirmPayment.addEventListener('click', confirmBooking);
 
     viewBookings.addEventListener('click', () => {
         document.getElementById('success-modal').classList.remove('active');
@@ -369,36 +394,40 @@ function openPaymentModal() {
     document.getElementById('payment-modal').classList.add('active');
 }
 
-function processPayment() {
+async function confirmBooking() {
     const selectedMethod = document.querySelector('input[name="payment"]:checked').value;
+    const total = MOVIE_DATA.selectedSeats.length * MOVIE_DATA.ticketPrice;
     
     document.getElementById('payment-modal').classList.remove('active');
     
-    setTimeout(() => {
-        const bookingId = 'BOOK-' + Date.now().toString().slice(-6);
-        const booking = {
-            bookingId,
+    try {
+        const bookingData = {
+            movieId: MOVIE_DATA.selectedMovie.id,
             movieTitle: MOVIE_DATA.selectedMovie.title,
             showtime: MOVIE_DATA.selectedShowtime,
-            seats: [...MOVIE_DATA.selectedSeats],
-            amount: MOVIE_DATA.selectedSeats.length * MOVIE_DATA.ticketPrice,
+            seats: MOVIE_DATA.selectedSeats.join(','),
+            totalAmount: total,
             paymentMethod: selectedMethod,
-            date: new Date().toLocaleDateString()
+            userEmail: MOVIE_DATA.currentUser?.email || 'guest@example.com',
+            status: 'CONFIRMED'
         };
         
-        MOVIE_DATA.bookings.push(booking);
-        localStorage.setItem('ticketBookingBookings', JSON.stringify(MOVIE_DATA.bookings));
+        const booking = await createBooking(bookingData);
         
-        document.getElementById('success-booking-id').textContent = bookingId;
-        document.getElementById('success-movie').textContent = booking.movieTitle;
-        document.getElementById('success-seats').textContent = booking.seats.join(', ');
-        document.getElementById('success-amount').textContent = `Rs. ${booking.amount}`;
-        
-        document.getElementById('success-modal').classList.add('active');
-        
-        renderBookings();
-        resetBookingSelection();
-    }, 500);
+        setTimeout(() => {
+            document.getElementById('success-booking-id').textContent = booking?.bookingId || 'BOOK-' + Date.now().toString().slice(-6);
+            document.getElementById('success-movie').textContent = MOVIE_DATA.selectedMovie.title;
+            document.getElementById('success-seats').textContent = MOVIE_DATA.selectedSeats.join(', ');
+            document.getElementById('success-amount').textContent = `Rs. ${total}`;
+            
+            document.getElementById('success-modal').classList.add('active');
+            
+            resetBookingSelection();
+        }, 500);
+    } catch (error) {
+        alert('Payment failed. Please try again.');
+        console.error(error);
+    }
 }
 
 window.showPage = showPage;

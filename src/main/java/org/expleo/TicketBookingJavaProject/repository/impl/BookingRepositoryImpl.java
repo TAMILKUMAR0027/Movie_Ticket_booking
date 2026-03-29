@@ -1,23 +1,25 @@
 package org.expleo.TicketBookingJavaProject.repository.impl;
 
-import java.util.List;
+import org.expleo.TicketBookingJavaProject.model.Booking;
+import org.expleo.TicketBookingJavaProject.model.City;
+import org.expleo.TicketBookingJavaProject.model.Theatre;
+import org.expleo.TicketBookingJavaProject.model.Movie;
+import org.expleo.TicketBookingJavaProject.model.Showtime;
 import java.util.ArrayList;
-import org.expleo.TicketBookingJavaProject.model.*;
+import java.util.List;
 
 public class BookingRepositoryImpl {
+
     public static List<City> cities = new ArrayList<>();
     public static List<Theatre> theatres = new ArrayList<>();
     public static List<Movie> movies = new ArrayList<>();
     public static List<Showtime> showtimes = new ArrayList<>();
     public static List<Booking> bookings = new ArrayList<>();
-    public static List<Ticket> tickets = new ArrayList<>();
 
     static {
         cities.add(new City(1, "New York"));
         cities.add(new City(2, "Los Angeles"));
         cities.add(new City(3, "Chicago"));
-        cities.add(new City(4, "Houston"));
-        cities.add(new City(5, "San Francisco"));
 
         theatres.add(new Theatre(1, "PVR Cinemas", null));
         theatres.add(new Theatre(2, "INOX", null));
@@ -40,15 +42,24 @@ public class BookingRepositoryImpl {
         return bookings;
     }
 
+    public Booking getBookingById(int id) {
+        for (Booking b : bookings) {
+            if (b.getBookingId() == id) return b;
+        }
+        return null;
+    }
+
+    public List<Booking> getBookingsByUser(String email) {
+        List<Booking> result = new ArrayList<>();
+        for (Booking b : bookings) {
+            if (email != null && email.equals(b.getUserEmail())) {
+                result.add(b);
+            }
+        }
+        return result;
+    }
+
     public void addBooking(Booking booking) {
         bookings.add(booking);
-    }
-
-    public List<Ticket> getTickets() {
-        return tickets;
-    }
-
-    public void addTicket(Ticket ticket) {
-        tickets.add(ticket);
     }
 }
