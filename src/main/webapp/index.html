@@ -15,12 +15,12 @@
                 <i class="fas fa-film"></i>
                 <span>MovieTickets</span>
             </div>
-            <ul class="nav-links">
+            <ul class="nav-links" id="nav-links">
                 <li><a href="#" class="active" data-page="home">Home</a></li>
                 <li><a href="#" data-page="movies">Movies</a></li>
                 <li><a href="#" data-page="theatres">Theatres</a></li>
                 <li><a href="#" data-page="bookings">My Bookings</a></li>
-                <li><a href="#" data-page="login" class="btn-login">Login</a></li>
+                <li><a href="#" data-page="login" class="btn-login" id="login-btn">Login</a></li>
             </ul>
             <div class="hamburger">
                 <i class="fas fa-bars"></i>
@@ -34,13 +34,21 @@
                 <div class="hero-content">
                     <h1>Book Your Favorite Movies</h1>
                     <p>Experience the magic of cinema with premium seating and latest blockbusters</p>
-                    <button class="btn-primary" onclick="showPage('movies')">
-                        <i class="fas fa-ticket-alt"></i> Book Now
-                    </button>
+                    <div class="hero-search">
+                        <input type="text" id="home-search" placeholder="Search movies by title...">
+                        <button class="btn-primary" onclick="searchMoviesFromHome()">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <div class="container">
+                <section class="search-results" id="search-results" style="display: none;">
+                    <h2 class="section-title">Search Results</h2>
+                    <div class="movie-grid" id="search-movies"></div>
+                </section>
+
                 <section class="featured">
                     <h2 class="section-title">Now Showing</h2>
                     <div class="movie-grid" id="featured-movies">
@@ -135,10 +143,23 @@
                                 <label>Password</label>
                                 <input type="password" id="login-password" placeholder="Enter your password" required>
                             </div>
+                            <div class="form-group">
+                                <label>Role</label>
+                                <select id="login-role">
+                                    <option value="customer">Customer</option>
+                                    <option value="super_admin">Super Admin</option>
+                                    <option value="theatre_admin">Theatre Admin</option>
+                                    <option value="officer">Officer</option>
+                                </select>
+                            </div>
                             <button type="submit" class="btn-primary btn-full">
                                 <i class="fas fa-sign-in-alt"></i> Login
                             </button>
                         </form>
+
+                        <div id="login-error" style="color: red; display: none; text-align: center; margin-bottom: 10px;">
+                            Invalid credentials!
+                        </div>
 
                         <form id="register-form" class="auth-form">
                             <div class="form-group">
@@ -169,6 +190,152 @@
                                 <i class="fas fa-user-plus"></i> Register
                             </button>
                         </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Super Admin Dashboard -->
+        <section id="super-admin" class="page">
+            <div class="container">
+                <div class="admin-header">
+                    <h2><i class="fas fa-crown"></i> Super Admin Dashboard</h2>
+                    <button class="btn-secondary" onclick="logout()">Logout</button>
+                </div>
+                <div class="admin-stats">
+                    <div class="stat-card">
+                        <i class="fas fa-building"></i>
+                        <h3>5</h3>
+                        <p>Theatres</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-users"></i>
+                        <h3>8</h3>
+                        <p>Total Users</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-film"></i>
+                        <h3>8</h3>
+                        <p>Movies</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-ticket-alt"></i>
+                        <h3>0</h3>
+                        <p>Bookings</p>
+                    </div>
+                </div>
+                <div class="admin-menu-grid">
+                    <div class="admin-menu-card" onclick="showAdminSection('create-theatre')">
+                        <i class="fas fa-plus-circle"></i>
+                        <h3>Create Theatre</h3>
+                    </div>
+                    <div class="admin-menu-card" onclick="showAdminSection('create-admin')">
+                        <i class="fas fa-user-plus"></i>
+                        <h3>Create Theatre Admin</h3>
+                    </div>
+                    <div class="admin-menu-card" onclick="showAdminSection('remove-theatre')">
+                        <i class="fas fa-trash"></i>
+                        <h3>Remove Theatre</h3>
+                    </div>
+                    <div class="admin-menu-card" onclick="showAdminSection('remove-admin')">
+                        <i class="fas fa-user-minus"></i>
+                        <h3>Remove Theatre Admin</h3>
+                    </div>
+                    <div class="admin-menu-card" onclick="showAdminSection('view-profile')">
+                        <i class="fas fa-user-circle"></i>
+                        <h3>View Profile</h3>
+                    </div>
+                    <div class="admin-menu-card" onclick="showAdminSection('update-profile')">
+                        <i class="fas fa-edit"></i>
+                        <h3>Update Profile</h3>
+                    </div>
+                </div>
+                <div id="super-admin-content" class="admin-content"></div>
+            </div>
+        </section>
+
+        <!-- Theatre Admin Dashboard -->
+        <section id="theatre-admin" class="page">
+            <div class="container">
+                <div class="admin-header">
+                    <h2><i class="fas fa-theater-masks"></i> Theatre Admin Dashboard</h2>
+                    <button class="btn-secondary" onclick="logout()">Logout</button>
+                </div>
+                <div class="admin-stats">
+                    <div class="stat-card">
+                        <i class="fas fa-film"></i>
+                        <h3 id="movie-count">8</h3>
+                        <p>Movies</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-users"></i>
+                        <h3 id="officer-count">1</h3>
+                        <p>Officers</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-ticket-alt"></i>
+                        <h3 id="booking-count">0</h3>
+                        <p>Bookings</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-money-bill-wave"></i>
+                        <h3>Rs.0</h3>
+                        <p>Revenue</p>
+                    </div>
+                </div>
+                <div class="admin-menu-grid">
+                    <div class="admin-menu-card" onclick="showAdminSection('add-movie')">
+                        <i class="fas fa-plus"></i>
+                        <h3>Add Movie</h3>
+                    </div>
+                    <div class="admin-menu-card" onclick="showAdminSection('update-movie')">
+                        <i class="fas fa-edit"></i>
+                        <h3>Update Movie</h3>
+                    </div>
+                    <div class="admin-menu-card" onclick="showAdminSection('delete-movie')">
+                        <i class="fas fa-trash"></i>
+                        <h3>Delete Movie</h3>
+                    </div>
+                    <div class="admin-menu-card" onclick="showAdminSection('create-officer')">
+                        <i class="fas fa-user-plus"></i>
+                        <h3>Create Officer</h3>
+                    </div>
+                    <div class="admin-menu-card" onclick="showAdminSection('view-movies')">
+                        <i class="fas fa-list"></i>
+                        <h3>View Movie List</h3>
+                    </div>
+                    <div class="admin-menu-card" onclick="showAdminSection('view-profile')">
+                        <i class="fas fa-user-circle"></i>
+                        <h3>View Profile</h3>
+                    </div>
+                    <div class="admin-menu-card" onclick="showAdminSection('update-profile')">
+                        <i class="fas fa-edit"></i>
+                        <h3>Update Profile</h3>
+                    </div>
+                </div>
+                <div id="theatre-admin-content" class="admin-content"></div>
+            </div>
+        </section>
+
+        <!-- Officer Dashboard -->
+        <section id="officer-dashboard" class="page">
+            <div class="container">
+                <div class="admin-header">
+                    <h2><i class="fas fa-id-badge"></i> Officer Dashboard</h2>
+                    <button class="btn-secondary" onclick="logout()">Logout</button>
+                </div>
+                <div class="admin-menu-grid">
+                    <div class="admin-menu-card" onclick="showPage('movies')">
+                        <i class="fas fa-film"></i>
+                        <h3>View Movie List</h3>
+                    </div>
+                    <div class="admin-menu-card" onclick="showPage('movies')">
+                        <i class="fas fa-ticket-alt"></i>
+                        <h3>Book Ticket</h3>
+                    </div>
+                    <div class="admin-menu-card" onclick="showPage('bookings')">
+                        <i class="fas fa-times-circle"></i>
+                        <h3>Cancel Ticket</h3>
                     </div>
                 </div>
             </div>

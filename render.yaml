@@ -1,9 +1,2 @@
-{
-  "name": "ticket-booking-system",
-  "runtime": "docker",
-  "dockerfilePath": "./Dockerfile",
-  "region": " oregon",
-  " plan": "free",
-  "builder": "heroku-buildpacks/docker",
-  "dockerCommand": "/bin/sh -c java -jar target/TicketBookingJavaProject.war"
-}
+database:
+  plan: free

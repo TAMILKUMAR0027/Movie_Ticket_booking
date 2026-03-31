@@ -13,29 +13,27 @@ public class UserService {
     private UserRepositoryImpl repo = new UserRepositoryImpl();
 
     public User login(String email, String password) {
-        List<User> users = repo.getUsers();
-        for (User u : users) {
-            if (u.getEmail().equalsIgnoreCase(email)) {
-                System.out.println("Login successful for: " + u.getName());
-                return u;
-            }
+        User user = repo.login(email, password);
+        if (user != null) {
+            System.out.println("Login successful for: " + user.getName() + " (" + user.getRole() + ")");
+        } else {
+            System.out.println("Invalid credentials!");
         }
-        System.out.println("User not found!");
-        return null;
+        return user;
     }
 
-    public void registerUser(String name, String email, String phone, String role) {
-        int newId = repo.getUsers().size() + 1;
+    public void registerUser(String name, String email, String phone, String password, String role) {
+        int newId = repo.getUsers().size() + 100;
         User user = null;
 
         if ("CUSTOMER".equalsIgnoreCase(role)) {
-            user = new Customer(newId, name, email, phone, "BASIC");
-        } else if ("ADMIN".equalsIgnoreCase(role)) {
-            user = new Administrator(newId, name, email, phone, "IT");
+            user = new Customer(newId, name, email, phone, password, "BASIC");
+        } else if ("THEATRE_ADMIN".equalsIgnoreCase(role)) {
+            user = new Administrator(newId, name, email, phone, password, "Operations", "");
         } else if ("OFFICER".equalsIgnoreCase(role)) {
-            user = new Officer(newId, name, email, phone, "MORNING");
+            user = new Officer(newId, name, email, phone, password, "MORNING");
         } else {
-            user = new User(newId, name, email, phone, role);
+            user = new User(newId, name, email, phone, password, role);
         }
 
         repo.addUser(user);
@@ -46,7 +44,23 @@ public class UserService {
         return repo.getUsers();
     }
 
+    public List<User> getUsers() {
+        return repo.getUsers();
+    }
+
     public User getUserById(int id) {
         return repo.getUserById(id);
+    }
+
+    public User getUserByEmail(String email) {
+        return repo.getUserByEmail(email);
+    }
+
+    public void removeUser(String email) {
+        repo.removeUserByEmail(email);
+    }
+
+    public void updateUserProfile(User user) {
+        System.out.println("Profile updated for: " + user.getName());
     }
 }

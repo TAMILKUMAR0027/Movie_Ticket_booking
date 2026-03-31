@@ -46,7 +46,6 @@ function showPage(pageId) {
 }
 
 async function renderMovies(filter = 'all', searchTerm = '') {
-    await loadMovies();
     const movieGrid = document.getElementById('all-movies');
     const featuredGrid = document.getElementById('featured-movies');
     
@@ -193,8 +192,15 @@ function initAuth() {
         e.preventDefault();
         const email = document.getElementById('login-email').value;
         const password = document.getElementById('login-password').value;
+        const role = document.getElementById('login-role').value;
         
-        MOVIE_DATA.currentUser = { email, name: email.split('@')[0] };
+        // Try admin login first
+        if (handleAdminLogin(email, password)) {
+            return;
+        }
+        
+        // Regular customer login
+        MOVIE_DATA.currentUser = { email, name: email.split('@')[0], role: 'CUSTOMER' };
         alert('Login successful!');
         showPage('home');
         updateLoginUI();
@@ -273,7 +279,6 @@ function initBooking() {
 }
 
 async function openBookingModal(movieId) {
-    await loadMovies();
     const movie = MOVIE_DATA.movies.find(m => m.id === movieId);
     if (!movie) {
         alert('Movie not found');
@@ -434,3 +439,426 @@ window.showPage = showPage;
 window.openBookingModal = openBookingModal;
 window.selectShowtime = selectShowtime;
 window.toggleSeat = toggleSeat;
+window.searchMoviesFromHome = searchMoviesFromHome;
+
+async function searchMoviesFromHome() {
+    const searchTerm = document.getElementById('home-search').value.trim();
+    if (!searchTerm) {
+        alert('Please enter a movie name to search');
+        return;
+    }
+    
+    const results = MOVIE_DATA.movies.filter(m => 
+        m.title && m.title.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    
+    const searchResultsSection = document.getElementById('search-results');
+    const searchMoviesGrid = document.getElementById('search-movies');
+    const featuredSection = document.querySelector('.featured');
+    
+    if (results.length > 0) {
+        searchMoviesGrid.innerHTML = results.map(movie => createMovieCard(movie)).join('');
+        searchResultsSection.style.display = 'block';
+        featuredSection.style.display = 'none';
+    } else {
+        searchMoviesGrid.innerHTML = '<p style="text-align:center; color: var(--gray);">No movies found matching "' + searchTerm + '"</p>';
+        searchResultsSection.style.display = 'block';
+        featuredSection.style.display = 'none';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const homeSearch = document.getElementById('home-search');
+    if (homeSearch) {
+        homeSearch.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchMoviesFromHome();
+            }
+        });
+    }
+});
+
+// ==================== ADMIN FUNCTIONALITY ====================
+let currentAdminRole = null;
+let adminUser = null;
+
+const ADMIN_USERS = {
+    'admin@system.com': { password: 'admin123', role: 'SUPER_ADMIN', name: 'Super Admin' },
+    'theatre@pvr.com': { password: 'theatre123', role: 'THEATRE_ADMIN', name: 'Theatre Admin' },
+    'officer1@pvr.com': { password: 'officer123', role: 'OFFICER', name: 'Officer One' },
+    'john@example.com': { password: 'password123', role: 'CUSTOMER', name: 'John Doe' }
+};
+
+function handleAdminLogin(email, password) {
+    const user = ADMIN_USERS[email];
+    if (user && user.password === password) {
+        adminUser = { email, ...user };
+        currentAdminRole = user.role;
+        
+        document.getElementById('login-modal').classList.remove('active');
+        
+        updateNavForAdmin(user.role, user.name);
+        
+        if (user.role === 'SUPER_ADMIN') {
+            showPage('super-admin');
+        } else if (user.role === 'THEATRE_ADMIN') {
+            showPage('theatre-admin');
+        } else if (user.role === 'OFFICER') {
+            showPage('officer-dashboard');
+        } else {
+            showPage('home');
+        }
+        
+        alert('Welcome ' + user.name + '!');
+        return true;
+    }
+    return false;
+}
+
+function updateNavForAdmin(role, name) {
+    const loginBtn = document.getElementById('login-btn');
+    loginBtn.textContent = name;
+    loginBtn.onclick = logout;
+}
+
+function logout() {
+    adminUser = null;
+    currentAdminRole = null;
+    
+    const loginBtn = document.getElementById('login-btn');
+    loginBtn.textContent = 'Login';
+    loginBtn.onclick = null;
+    loginBtn.setAttribute('data-page', 'login');
+    
+    showPage('home');
+    alert('Logged out successfully!');
+}
+
+function showAdminSection(section) {
+    const contentDiv = document.getElementById('super-admin-content');
+    if (currentAdminRole === 'THEATRE_ADMIN') {
+        contentDiv = document.getElementById('theatre-admin-content');
+    }
+    
+    let html = '';
+    
+    switch(section) {
+        case 'create-theatre':
+            html = `
+                <h3>Create New Theatre</h3>
+                <div class="form-group">
+                    <label>Theatre Name</label>
+                    <input type="text" id="theatre-name" placeholder="Enter theatre name">
+                </div>
+                <div class="form-group">
+                    <label>City</label>
+                    <select id="theatre-city">
+                        <option value="Chennai">Chennai</option>
+                        <option value="Coimbatore">Coimbatore</option>
+                        <option value="Madurai">Madurai</option>
+                        <option value="Trichy">Trichy</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Location</label>
+                    <input type="text" id="theatre-location" placeholder="Enter location">
+                </div>
+                <div class="form-group">
+                    <label>Number of Screens</label>
+                    <input type="number" id="theatre-screens" placeholder="Enter number of screens">
+                </div>
+                <button class="btn-primary" onclick="createTheatre()">Create Theatre</button>
+            `;
+            break;
+            
+        case 'create-admin':
+            html = `
+                <h3>Create Theatre Admin</h3>
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="admin-name" placeholder="Enter name">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="admin-email" placeholder="Enter email">
+                </div>
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="tel" id="admin-phone" placeholder="Enter phone">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="admin-password" placeholder="Enter password">
+                </div>
+                <div class="form-group">
+                    <label>Theatre</label>
+                    <select id="admin-theatre">
+                        <option value="PVR Cinemas">PVR Cinemas</option>
+                        <option value="INOX">INOX</option>
+                        <option value="Cinepolis">Cinepolis</option>
+                    </select>
+                </div>
+                <button class="btn-primary" onclick="createTheatreAdmin()">Create Admin</button>
+            `;
+            break;
+            
+        case 'remove-theatre':
+            html = `
+                <h3>Remove Theatre</h3>
+                <table>
+                    <thead><tr><th>ID</th><th>Name</th><th>City</th><th>Action</th></tr></thead>
+                    <tbody>
+                        <tr><td>1</td><td>PVR Cinemas</td><td>Chennai</td><td><button class="btn-secondary" onclick="removeTheatre(1)">Remove</button></td></tr>
+                        <tr><td>2</td><td>INOX</td><td>Chennai</td><td><button class="btn-secondary" onclick="removeTheatre(2)">Remove</button></td></tr>
+                        <tr><td>3</td><td>Cinepolis</td><td>Coimbatore</td><td><button class="btn-secondary" onclick="removeTheatre(3)">Remove</button></td></tr>
+                    </tbody>
+                </table>
+            `;
+            break;
+            
+        case 'remove-admin':
+            html = `
+                <h3>Remove Theatre Admin</h3>
+                <table>
+                    <thead><tr><th>Name</th><th>Email</th><th>Theatre</th><th>Action</th></tr></thead>
+                    <tbody>
+                        <tr><td>Theatre Admin</td><td>theatre@pvr.com</td><td>PVR Cinemas</td><td><button class="btn-secondary" onclick="removeTheatreAdmin('theatre@pvr.com')">Remove</button></td></tr>
+                    </tbody>
+                </table>
+            `;
+            break;
+            
+        case 'add-movie':
+            html = `
+                <h3>Add New Movie</h3>
+                <div class="form-group">
+                    <label>Movie Title</label>
+                    <input type="text" id="movie-title" placeholder="Enter movie title">
+                </div>
+                <div class="form-group">
+                    <label>Language</label>
+                    <select id="movie-language">
+                        <option value="English">English</option>
+                        <option value="Hindi">Hindi</option>
+                        <option value="Tamil">Tamil</option>
+                        <option value="Telugu">Telugu</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Duration</label>
+                    <input type="text" id="movie-duration" placeholder="e.g., 2h 30m">
+                </div>
+                <div class="form-group">
+                    <label>Rating</label>
+                    <input type="text" id="movie-rating" placeholder="e.g., 8.5">
+                </div>
+                <button class="btn-primary" onclick="addMovie()">Add Movie</button>
+            `;
+            break;
+            
+        case 'update-movie':
+            html = `
+                <h3>Update Movie</h3>
+                <table>
+                    <thead><tr><th>ID</th><th>Title</th><th>Language</th><th>Duration</th><th>Action</th></tr></thead>
+                    <tbody>
+                        ${MOVIE_DATA.movies.map(m => `<tr><td>${m.id}</td><td>${m.title}</td><td>${m.language}</td><td>${m.duration || 'N/A'}</td><td><button class="btn-primary" onclick="editMovie(${m.id})">Edit</button></td></tr>`).join('')}
+                    </tbody>
+                </table>
+            `;
+            break;
+            
+        case 'delete-movie':
+            html = `
+                <h3>Delete Movie</h3>
+                <table>
+                    <thead><tr><th>ID</th><th>Title</th><th>Language</th><th>Action</th></tr></thead>
+                    <tbody>
+                        ${MOVIE_DATA.movies.map(m => `<tr><td>${m.id}</td><td>${m.title}</td><td>${m.language}</td><td><button class="btn-secondary" onclick="deleteMovie(${m.id})">Delete</button></td></tr>`).join('')}
+                    </tbody>
+                </table>
+            `;
+            break;
+            
+        case 'create-officer':
+            html = `
+                <h3>Create Officer</h3>
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="officer-name" placeholder="Enter name">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="officer-email" placeholder="Enter email">
+                </div>
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="tel" id="officer-phone" placeholder="Enter phone">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="officer-password" placeholder="Enter password">
+                </div>
+                <div class="form-group">
+                    <label>Shift</label>
+                    <select id="officer-shift">
+                        <option value="MORNING">Morning</option>
+                        <option value="EVENING">Evening</option>
+                    </select>
+                </div>
+                <button class="btn-primary" onclick="createOfficer()">Create Officer</button>
+            `;
+            break;
+            
+        case 'view-movies':
+            html = `
+                <h3>Movie List</h3>
+                <table>
+                    <thead><tr><th>ID</th><th>Title</th><th>Language</th><th>Duration</th><th>Rating</th></tr></thead>
+                    <tbody>
+                        ${MOVIE_DATA.movies.map(m => `<tr><td>${m.id}</td><td>${m.title}</td><td>${m.language}</td><td>${m.duration || 'N/A'}</td><td>${m.rating || 'N/A'}</td></tr>`).join('')}
+                    </tbody>
+                </table>
+            `;
+            break;
+            
+        case 'view-profile':
+            html = `
+                <h3>My Profile</h3>
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" value="${adminUser?.name || ''}" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" value="${adminUser?.email || ''}" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Role</label>
+                    <input type="text" value="${adminUser?.role || ''}" disabled>
+                </div>
+            `;
+            break;
+            
+        case 'update-profile':
+            html = `
+                <h3>Update Profile</h3>
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="update-name" value="${adminUser?.name || ''}">
+                </div>
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="tel" id="update-phone" placeholder="Enter new phone">
+                </div>
+                <button class="btn-primary" onclick="updateProfile()">Update Profile</button>
+            `;
+            break;
+            
+        default:
+            html = '<p>Select an option from the menu</p>';
+    }
+    
+    contentDiv.innerHTML = html;
+}
+
+function createTheatre() {
+    const name = document.getElementById('theatre-name').value;
+    const city = document.getElementById('theatre-city').value;
+    const location = document.getElementById('theatre-location').value;
+    const screens = document.getElementById('theatre-screens').value;
+    
+    if (name && city && location && screens) {
+        alert('Theatre "' + name + '" created successfully!');
+        document.getElementById('super-admin-content').innerHTML = '';
+    } else {
+        alert('Please fill all fields!');
+    }
+}
+
+function createTheatreAdmin() {
+    const name = document.getElementById('admin-name').value;
+    const email = document.getElementById('admin-email').value;
+    
+    if (name && email) {
+        alert('Theatre Admin "' + name + '" created successfully!');
+        document.getElementById('super-admin-content').innerHTML = '';
+    } else {
+        alert('Please fill all fields!');
+    }
+}
+
+function removeTheatre(id) {
+    if (confirm('Are you sure you want to remove this theatre?')) {
+        alert('Theatre removed successfully!');
+    }
+}
+
+function removeTheatreAdmin(email) {
+    if (confirm('Are you sure you want to remove this admin?')) {
+        alert('Theatre Admin removed successfully!');
+    }
+}
+
+function addMovie() {
+    const title = document.getElementById('movie-title').value;
+    const language = document.getElementById('movie-language').value;
+    
+    if (title && language) {
+        const newId = MOVIE_DATA.movies.length + 1;
+        MOVIE_DATA.movies.push({
+            id: newId,
+            title: title,
+            language: language,
+            duration: document.getElementById('movie-duration').value || '2h 30m',
+            rating: document.getElementById('movie-rating').value || '7.5'
+        });
+        alert('Movie "' + title + '" added successfully!');
+        document.getElementById('theatre-admin-content').innerHTML = '';
+    } else {
+        alert('Please fill required fields!');
+    }
+}
+
+function editMovie(id) {
+    alert('Edit movie with ID: ' + id);
+}
+
+function deleteMovie(id) {
+    if (confirm('Are you sure you want to delete this movie?')) {
+        MOVIE_DATA.movies = MOVIE_DATA.movies.filter(m => m.id !== id);
+        alert('Movie deleted successfully!');
+        showAdminSection('delete-movie');
+    }
+}
+
+function createOfficer() {
+    const name = document.getElementById('officer-name').value;
+    const email = document.getElementById('officer-email').value;
+    
+    if (name && email) {
+        alert('Officer "' + name + '" created successfully!');
+        document.getElementById('theatre-admin-content').innerHTML = '';
+    } else {
+        alert('Please fill all fields!');
+    }
+}
+
+function updateProfile() {
+    alert('Profile updated successfully!');
+    document.getElementById('theatre-admin-content').innerHTML = '';
+}
+
+// Make functions available globally
+window.handleAdminLogin = handleAdminLogin;
+window.logout = logout;
+window.showAdminSection = showAdminSection;
+window.createTheatre = createTheatre;
+window.createTheatreAdmin = createTheatreAdmin;
+window.removeTheatre = removeTheatre;
+window.removeTheatreAdmin = removeTheatreAdmin;
+window.addMovie = addMovie;
+window.editMovie = editMovie;
+window.deleteMovie = deleteMovie;
+window.createOfficer = createOfficer;
+window.updateProfile = updateProfile;

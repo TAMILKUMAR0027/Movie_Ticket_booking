@@ -6,8 +6,8 @@ public class Customer extends User {
 
     public Customer() { super(); }
 
-    public Customer(int id, String name, String email, String phone, String membershipType) {
-        super(id, name, email, phone, "CUSTOMER");
+    public Customer(int id, String name, String email, String phone, String password, String membershipType) {
+        super(id, name, email, phone, password, "CUSTOMER");
         this.membershipType = membershipType;
         this.loyaltyPoints = 0;
     }
