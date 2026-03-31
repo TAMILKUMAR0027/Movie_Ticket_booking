@@ -1,2 +1,5 @@
-database:
-  plan: free
+services:
+  - type: web
+    name: ticket-booking
+    dockerfilePath: ./Dockerfile
+    plan: free

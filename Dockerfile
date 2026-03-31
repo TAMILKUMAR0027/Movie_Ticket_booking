@@ -1,7 +1,18 @@
-FROM jetty:9.4-jdk11
+FROM maven:3.9-eclipse-temurin-17 AS builder
 
-COPY target/TicketBookingJavaProject.war /var/lib/jetty/webapps/ROOT.war
+WORKDIR /app
+
+COPY pom.xml .
+COPY src ./src
+
+RUN mvn clean package -DskipTests
+
+FROM eclipse-temurin:17-jre-alpine
+
+WORKDIR /app
+
+COPY --from=builder /app/target/TicketBookingJavaProject.war .
 
 EXPOSE 8080
 
-CMD ["java", "-jar", "/usr/local/jetty/start.jar"]
+CMD ["java", "-jar", "TicketBookingJavaProject.war"]
